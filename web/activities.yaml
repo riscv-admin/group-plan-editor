@@ -1,0 +1,21 @@
+activities:
+  Proposing:
+    - ["Proposal of Work Development", 30]
+    - ["Proposal of Work Review by TSC", 1]
+    - ["Proposal of Work Review by All Members", 14]
+    - ["TSC PoW Approval", 14]
+    - ["BoD PoW Approval", 1]
+  Structuring and Chartering:
+    - ["Infrastructure Deployment", 2]
+    - ["Call for Participation & Voting Rights", 14]
+    - ["Call for Candidates (Chair and Vice-Chair)", 14]
+    - ["Chair Elections", 14]
+    - ["Charter Development", 30]
+    - ["Charter Approval by 2/3 of the Voting Members of the Technical Committee", 1]
+    - ["Charter Review by TSC", 1]
+    - ["Charter Approval by TSC", 14]
+  Active:
+    - ["Present Work Progress to TSC", 14]
+    - ["Work Development", 365]
+  Disbanded:
+    - ["Group Disbanded", 14]

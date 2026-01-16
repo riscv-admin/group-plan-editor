@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="static/favicon.ico" />
+    <title>RISC-V Technical Committee Plan Editor</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f8f9fa;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: white;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+      }
+
+      h1 {
+        text-align: center;
+        color: #0c2f6c;
+        font-size: 1.8em;
+        margin-bottom: 20px;
+      }
+
+      .info-bar {
+        background-color: #e0f2f7; /* Lighter blue */
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 1.2em;
+        color: #0d47a1; /* Darker blue text */
+      }
+
+      .summary-bar {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 20px;
+      }
+
+      .summary-item {
+        padding: 10px;
+        border-radius: 6px;
+        color: white;
+        text-align: center;
+        font-size: 0.7em;
+        min-width: 105px;
+      }
+
+      /* Summary item colors by phase */
+      .summary-item.proposing {
+        background-color: #9c27b0; /* Purple */
+      }
+
+      .summary-item.structuring-and-chartering {
+        background-color: #2196f3; /* Blue */
+      }
+
+      .summary-item.active {
+        background-color: #4caf50; /* Green */
+      }
+
+      .summary-item.disbanded {
+        background-color: #f44336; /* Red */
+      }
+
+      .duration-warning {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 8px;
+        padding: 3px 8px;
+        font-size: 0.85em;
+        font-weight: 600;
+        color: #6b1b1b;
+        background: linear-gradient(90deg, #ffe7cc, #ffd6d6);
+        border: 1px solid #f2b8a2;
+        border-radius: 999px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      }
+
+      .duration-warning[hidden] {
+        display: none;
+      }
+
+      .duration-warning i {
+        color: #d35400;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 0.88em;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      table,
+      th,
+      td {
+        border: 1px solid #ddd;
+      }
+
+      th,
+      td {
+        padding: 6px; /* Uniform padding across tables */
+        text-align: left; /* Left-align text */
+        border: 1px solid #ddd; /* Consistent border for both tables */
+      }
+
+      th {
+        background-color: #2962ff; /* Darker blue */
+        color: white;
+      }
+
+      .slider-container {
+        display: flex;
+        align-items: center;
+      }
+
+      .slider {
+        flex-grow: 1;
+        margin-right: 10px;
+      }
+
+      .button-container {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .button {
+        padding: 10px 15px;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1em;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .button.small {
+        padding: 5px 10px;
+        font-size: 0.9em;
+      }
+
+      .button.blue {
+        background-color: #4285f4;
+      }
+
+      .button:hover {
+        opacity: 0.9;
+      }
+
+      /* More distinct and slightly more opaque colors for rows */
+      tr.proposing {
+        background-color: rgba(156, 39, 176, 0.2);
+      }
+
+      tr.structuring-and-chartering {
+        background-color: rgba(33, 150, 243, 0.2);
+      }
+
+      tr.active {
+        background-color: rgba(76, 175, 80, 0.2);
+      }
+
+      tr.disbanded {
+        background-color: rgba(244, 67, 54, 0.2);
+      }
+
+      #summary-table-container table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 0.9em;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      #summary-table-container th,
+      #summary-table-container td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+
+      #summary-table-container th {
+        background-color: #2962ff;
+        color: white;
+      }
+
+      #summary-table-container tr.proposing {
+        background-color: rgba(156, 39, 176, 0.2);
+      }
+
+      #summary-table-container tr.structuring-and-chartering {
+        background-color: rgba(33, 150, 243, 0.2);
+      }
+
+      #summary-table-container tr.active {
+        background-color: rgba(76, 175, 80, 0.2);
+      }
+
+      #summary-table-container tr.disbanded {
+        background-color: rgba(244, 67, 54, 0.2);
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <img
+        src="static/riscv.png"
+        alt="RISC-V Logo"
+        style="display: block; margin: 0 auto; max-width: 40%; height: auto"
+      />
+      <h1>Technical Committee Plan Editor</h1>
+      <table id="timeline-table">
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Activity</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Duration (Days)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for phase, activity, start_date, end_date, duration in
+          calculated_dates %}
+          <tr
+            data-phase="{{ phase }}"
+            class="{{ phase|lower|replace(' ', '-') }}"
+            data-default-duration="{{ duration }}"
+          >
+            <td>{{ phase }}</td>
+            <td>
+              {{ activity }} {% if "Approval" in activity %}
+              <i
+                class="fas fa-exclamation-triangle"
+                style="color: rgb(255, 106, 0); margin-left: 5px"
+              ></i>
+              {% endif %}
+              {% if activity == "Work Development" %}
+              <span class="duration-warning" hidden>
+                <i class="fa-solid fa-circle-exclamation"></i>
+                TSC must approve continuation beyond 2 years.
+              </span>
+              {% endif %}
+            </td>
+            <td class="start-date">
+              {% if loop.first %}
+              <input
+                type="date"
+                id="plan-start-date"
+                value="{{ start_date }}"
+                onchange="updateDates()"
+              />
+              {% else %} {{ start_date }} {% endif %}
+            </td>
+            <td class="end-date">{{ end_date }}</td>
+            <td>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  class="slider"
+                  name="{{ activity.replace(' ', '_') }}_duration"
+                  value="{{ duration }}"
+                  min="0"
+                  max="{% if activity == 'Work Development' %}1095{% else %}500{% endif %}"
+                  oninput="updateSlider(this)"
+                />
+                <span class="slider-value">{{ duration }}</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div id="summary-bar" class="summary-bar"></div>
+      <div id="info-bar" class="info-bar"></div>
+      <div id="summary-table-container"></div>
+      <div class="button-container">
+        <button class="button small" onclick="resetToDefault()">
+          Reset to Default
+        </button>
+        <button class="button blue small" onclick="saveImage()">
+          Save Image
+        </button>
+        <button class="button blue small" onclick="exportCSV()">
+          Export Detailed Plan
+        </button>
+        <button class="button blue small" onclick="savePlanSummary()">
+          Export Phase Summary
+        </button>
+      </div>
+    </div>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const startDateInput = document.getElementById("plan-start-date");
+        const currentDate = new Date().toISOString().split("T")[0];
+        if (startDateInput) startDateInput.value = currentDate;
+        updateDates();
+      });
+
+      function normalizePhaseClass(phaseName) {
+        return String(phaseName || "")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      }
+
+      function readDateFromCell(cell) {
+        const input = cell?.querySelector("input");
+        return (input ? input.value : (cell?.textContent || "")).trim();
+      }
+
+      function parseDate(value) {
+        const trimmed = String(value || "").trim();
+        if (!trimmed) return null;
+        const date = new Date(trimmed);
+        return isNaN(date.getTime()) ? null : date;
+      }
+
+      function formatDate(date) {
+        return date.toISOString().split("T")[0];
+      }
+
+      function addDays(date, days) {
+        const result = new Date(date.getTime());
+        result.setUTCDate(result.getUTCDate() + days);
+        return result;
+      }
+
+      function addMonths(date, months) {
+        const year = date.getUTCFullYear();
+        const month = date.getUTCMonth();
+        const day = date.getUTCDate();
+        const targetMonth = month + months;
+        const targetYear = year + Math.floor(targetMonth / 12);
+        const targetMonthIndex = ((targetMonth % 12) + 12) % 12;
+        const daysInTarget = new Date(
+          Date.UTC(targetYear, targetMonthIndex + 1, 0)
+        ).getUTCDate();
+        const newDay = Math.min(day, daysInTarget);
+        return new Date(Date.UTC(targetYear, targetMonthIndex, newDay));
+      }
+
+      function updateSlider(element) {
+        const row = element.closest("tr");
+        const valueDisplay = row.querySelector(".slider-value");
+        valueDisplay.textContent = element.value;
+        updateDates();
+      }
+
+      function collectPhaseSummaries() {
+        const rows = Array.from(
+          document.querySelectorAll("#timeline-table tbody tr")
+        );
+        const phases = [];
+        rows.forEach((row) => {
+          const phase = row.dataset.phase || "";
+          if (phase && !phases.includes(phase)) phases.push(phase);
+        });
+
+        return phases.map((phase) => {
+          const phaseRows = rows.filter((row) => row.dataset.phase === phase);
+          let minStart = null;
+          let maxEnd = null;
+          let totalDuration = 0;
+
+          phaseRows.forEach((row) => {
+            const startStr = readDateFromCell(
+              row.querySelector(".start-date")
+            );
+            const endStr =
+              (row.querySelector(".end-date")?.textContent || "").trim();
+            const startDate = parseDate(startStr);
+            const endDate = parseDate(endStr);
+
+            if (startDate && (!minStart || startDate < minStart)) {
+              minStart = startDate;
+            }
+            if (endDate && (!maxEnd || endDate > maxEnd)) {
+              maxEnd = endDate;
+            }
+
+            const sliderValue = parseInt(
+              row.querySelector(".slider")?.value,
+              10
+            );
+            totalDuration += Number.isFinite(sliderValue) ? sliderValue : 0;
+          });
+
+          const startStr = minStart ? formatDate(minStart) : "";
+          const endStr = maxEnd ? formatDate(maxEnd) : "";
+
+          return {
+            phase,
+            startStr,
+            endStr,
+            duration: totalDuration,
+          };
+        });
+      }
+
+      function updateDates() {
+        const rows = document.querySelectorAll("#timeline-table tbody tr");
+        if (!rows.length) return;
+
+        const firstStartCell = rows[0].querySelector(".start-date");
+        const firstInput = firstStartCell?.querySelector("input");
+        const firstDate = parseDate(firstInput?.value) || new Date();
+        if (firstInput) firstInput.value = formatDate(firstDate);
+
+        let cursor = new Date(firstDate.getTime());
+        let bodApprovalDate = null;
+
+        rows.forEach((row) => {
+          const activityName =
+            row.querySelector("td:nth-child(2)")?.textContent.trim() || "";
+          const phaseName = row.getAttribute("data-phase") || "";
+          const slider = row.querySelector(".slider");
+          const duration = parseInt(slider?.value, 10) || 0;
+
+          const isPresentWorkProgress =
+            phaseName.toLowerCase() === "active" &&
+            activityName === "Present Work Progress to TSC";
+
+          let startDate = cursor;
+          if (isPresentWorkProgress && bodApprovalDate) {
+            startDate = addMonths(bodApprovalDate, 6);
+          }
+
+          const startCell = row.querySelector(".start-date");
+          const startInput = startCell?.querySelector("input");
+          const startStr = formatDate(startDate);
+          if (startInput) startInput.value = startStr;
+          else startCell.textContent = startStr;
+
+          let endDate = startDate;
+          if (duration > 0) {
+            endDate = addDays(startDate, duration - 1);
+          }
+
+          const endCell = row.querySelector(".end-date");
+          endCell.textContent = formatDate(endDate);
+
+          const valueDisplay = row.querySelector(".slider-value");
+          if (valueDisplay) valueDisplay.textContent = String(duration);
+
+          if (activityName.includes("Work Development")) {
+            const warning = row.querySelector(".duration-warning");
+            if (warning) {
+              const twoYearsDays = 731;
+              warning.hidden = duration <= twoYearsDays;
+            }
+          }
+
+          if (activityName === "BoD PoW Approval") {
+            bodApprovalDate = new Date(endDate.getTime());
+          }
+
+          if (!isPresentWorkProgress && duration > 0) {
+            cursor = addDays(endDate, 1);
+          }
+        });
+
+        updateSummaryBar();
+        updateSummaryTable();
+        updateInfoBar();
+      }
+
+      function updateInfoBar() {
+        const infoBar = document.getElementById("info-bar");
+        if (!infoBar) return;
+
+        const rows = Array.from(
+          document.querySelectorAll("#timeline-table tbody tr")
+        );
+        if (!rows.length) {
+          infoBar.textContent = "";
+          return;
+        }
+
+        let minStart = null;
+        let maxEnd = null;
+
+        rows.forEach((row) => {
+          const startDate = parseDate(
+            readDateFromCell(row.querySelector(".start-date"))
+          );
+          const endDate = parseDate(
+            row.querySelector(".end-date")?.textContent
+          );
+
+          if (startDate && (!minStart || startDate < minStart)) {
+            minStart = startDate;
+          }
+          if (endDate && (!maxEnd || endDate > maxEnd)) {
+            maxEnd = endDate;
+          }
+        });
+
+        let totalDaysText = "";
+        if (minStart && maxEnd) {
+          const msPerDay = 24 * 60 * 60 * 1000;
+          const totalDays = Math.max(
+            1,
+            Math.round((maxEnd - minStart) / msPerDay) + 1
+          );
+          totalDaysText = `${totalDays}`;
+        }
+
+        let bodDate = null;
+        let charterApprovalDate = null;
+
+        rows.forEach((row) => {
+          const activityName =
+            row.querySelector("td:nth-child(2)")?.textContent.trim() || "";
+          if (activityName === "BoD PoW Approval") {
+            bodDate = parseDate(row.querySelector(".end-date")?.textContent || "");
+          }
+          if (activityName === "Charter Approval by TSC") {
+            charterApprovalDate = parseDate(
+              row.querySelector(".end-date")?.textContent || ""
+            );
+          }
+        });
+
+        const bodText = bodDate ? formatDate(bodDate) : "N/A";
+        const charterText = charterApprovalDate
+          ? formatDate(charterApprovalDate)
+          : "N/A";
+        const lifecycleText = totalDaysText || "N/A";
+        infoBar.textContent =
+          `Group Approval by ${bodText} | ` +
+          `Charter Approval by ${charterText} | ` +
+          `Total Lifecycle: ${lifecycleText} Days`;
+      }
+
+      function resetToDefault() {
+        const rows = document.querySelectorAll("#timeline-table tbody tr");
+        rows.forEach((row) => {
+          const defaultDuration = row.getAttribute("data-default-duration");
+          const slider = row.querySelector(".slider");
+          const valueDisplay = row.querySelector(".slider-value");
+          if (slider && defaultDuration !== null) {
+            slider.value = defaultDuration;
+            if (valueDisplay) valueDisplay.textContent = defaultDuration;
+          }
+        });
+
+        // Reset Start Date
+        const startInput = document.getElementById("plan-start-date");
+        if (startInput) {
+          startInput.value = new Date().toISOString().split("T")[0];
+        }
+
+        updateDates();
+      }
+
+      function exportCSV() {
+        const rows = document.querySelectorAll("#timeline-table tbody tr");
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent +=
+          '"Phase","Activity","Start Date","End Date","Duration (Days)"\n';
+
+        rows.forEach((row) => {
+          const phase = row.querySelector("td:nth-child(1)").textContent.trim();
+          const activity = row
+            .querySelector("td:nth-child(2)")
+            .textContent.trim();
+          const startDate = readDateFromCell(row.querySelector(".start-date"));
+          const endDate = row.querySelector(".end-date").textContent.trim();
+          const duration = row.querySelector(".slider").value.trim();
+
+          const rowData = `"${phase}","${activity}","${startDate}","${endDate}","${duration}"\n`;
+          csvContent += rowData;
+        });
+
+        // Generate current date in YYYY-MM-DD format
+        const currentDate = new Date().toISOString().split("T")[0];
+
+        // Create the file name with the current date
+        const fileName = `group-plan-detailed-${currentDate}.csv`;
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+      }
+
+      function saveImage() {
+        // Hide the buttons and the header temporarily
+        const buttons = document.querySelectorAll(".button-container button");
+        const header = document.querySelector("h1");
+
+        buttons.forEach((button) => (button.style.display = "none"));
+        header.style.display = "none";
+
+        // Clone the container to capture its contents
+        const container = document.querySelector(".container");
+        const clone = container.cloneNode(true);
+
+        // Create a temporary container for the clone
+        const tempContainer = document.createElement("div");
+        tempContainer.style.position = "absolute";
+        tempContainer.style.top = "0";
+        tempContainer.style.left = "0";
+        tempContainer.style.width = "100%";
+        tempContainer.style.backgroundColor = "white"; // Ensure background color
+        tempContainer.appendChild(clone);
+        document.body.appendChild(tempContainer);
+
+        // Use html2canvas to capture the container
+        html2canvas(tempContainer, {
+          scale: 2, // Increase scale for better resolution
+          useCORS: true, // Include this for loading external assets
+        }).then((canvas) => {
+          // Create a download link for the image
+          const link = document.createElement("a");
+          const currentDate = new Date().toISOString().split("T")[0];
+          link.download = `group-plan-${currentDate}.png`;
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+
+          // Restore visibility of buttons and header
+          buttons.forEach((button) => (button.style.display = "inline-block"));
+          header.style.display = "block";
+
+          // Remove the temporary container
+          document.body.removeChild(tempContainer);
+        });
+      }
+
+      function updateSummaryBar() {
+        const summaryBar = document.getElementById("summary-bar");
+        if (!summaryBar) return;
+
+        const summaries = collectPhaseSummaries();
+        summaryBar.innerHTML = summaries
+          .map((summary) => {
+            const phaseClass = normalizePhaseClass(summary.phase);
+            const durationText = summary.duration
+              ? `${summary.duration} days`
+              : "—";
+            return `
+              <div class="summary-item ${phaseClass}">
+                <strong>${summary.phase}</strong><br>
+                End Date: ${summary.endStr}<br>
+                ${durationText}
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function updateSummaryTable() {
+        const summaryTableContainer = document.getElementById(
+          "summary-table-container"
+        );
+        if (!summaryTableContainer) return;
+
+        const summaries = collectPhaseSummaries();
+        const summaryTableHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Phase</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Duration (Days)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${summaries
+          .map((summary) => {
+            const phaseClass = normalizePhaseClass(summary.phase);
+            return `
+              <tr class="${phaseClass}">
+                <td>${summary.phase}</td>
+                <td>${summary.startStr}</td>
+                <td>${summary.endStr}</td>
+                <td>${summary.duration}</td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    </table>
+  `;
+
+        // Insert the summary table into the container
+        summaryTableContainer.innerHTML = summaryTableHTML;
+      }
+
+      function savePlanSummary() {
+        const summaries = collectPhaseSummaries();
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += '"Phase","Start Date","End Date","Duration (Days)"\n';
+        summaries.forEach((summary) => {
+          const row = `"${summary.phase}","${summary.startStr}","${summary.endStr}","${summary.duration}"\n`;
+          csvContent += row;
+        });
+
+        const link = document.createElement("a");
+        const currentDate = new Date().toISOString().split("T")[0];
+        const fileName = `group-plan-phase-summary-${currentDate}.csv`;
+
+        link.setAttribute("href", encodeURI(csvContent));
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+      }
+    </script>
+  </body>
+</html>
