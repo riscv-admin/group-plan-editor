@@ -27,7 +27,7 @@ ACTIVITIES_FILE = "web/activities.yaml"
 CHARTER_APPROVAL = "Charter Approval by TSC"
 WORK_DEVELOPMENT = "Work Development"
 TWO_YEAR_DEADLINE = "2-Year Deadline"
-ONE_YEAR_EXTENSION = "One-Year Extension (Governing Committee + TSC Approval)"
+ONE_YEAR_EXTENSION = "One-Year Extension"
 
 # Ordered list of project phases - defines the sequence of the lifecycle
 PHASE_ORDER = [

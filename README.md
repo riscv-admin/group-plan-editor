@@ -10,7 +10,8 @@ Key behaviors
 - "Work Development" starts after "Charter Approval by TSC" (the group becomes
   Active). The "2-Year Deadline" row marks Charter Approval + 2 years, after
   which the TSC may cancel unfinished work. Work requested beyond that date
-  moves to the "One-Year Extension (Governing Committee + TSC Approval)" row,
+  moves to the "One-Year Extension" row (Governing
+  Committee approval, then TSC approval),
   which starts the day after the deadline and ends no later than Charter
   Approval + 3 years.
 

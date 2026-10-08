@@ -534,6 +534,23 @@
         font-size: 0.75rem;
       }
 
+      /* 2-Year Deadline and One-Year Extension: yellow, red line at the deadline */
+      tbody tr.deadline-row {
+        background: rgba(250, 204, 21, 0.18);
+      }
+
+      tbody tr.deadline-row td:first-child {
+        box-shadow: inset 4px 0 0 #eab308;
+      }
+
+      tbody tr.deadline-line td {
+        border-top: 2px solid #dc2626;
+      }
+
+      tbody tr.deadline-line .slider-value {
+        visibility: hidden;
+      }
+
       .slider.derived {
         visibility: hidden;
       }
@@ -628,12 +645,12 @@
               <tr
                 data-phase="{{ phase }}"
                 data-activity="{{ activity }}"
-                class="{{ phase|lower|replace(' ', '-') }}"
+                class="{{ phase|lower|replace(' ', '-') }}{% if activity in ('2-Year Deadline', 'One-Year Extension') %} deadline-row{% endif %}{% if activity == '2-Year Deadline' %} deadline-line{% endif %}"
                 data-default-duration="{{ duration }}"
               >
                 <td><span class="phase-chip">{{ phase }}</span></td>
                 <td>
-                  {{ activity }} {% if "Approval" in activity %}
+                  {{ activity }} {% if "Approval" in activity or activity == "One-Year Extension" %}
                   <i
                     class="fa-solid fa-triangle-exclamation approval-icon"
                     title="Approval step"
@@ -647,7 +664,7 @@
                     </span>
                   </div>
                   {% elif activity == "2-Year Deadline" %}
-                  <div class="row-note">Charter Approval + 2 years. After this date the TSC may cancel unfinished work.</div>
+                  <div class="row-note">2 years after Charter Approval. Work not finished by this date needs an extension.</div>
                   {% elif activity.startswith("One-Year Extension") %}
                   <div class="row-note"></div>
                   {% endif %}
@@ -716,7 +733,7 @@
       // Active). After 2 years the TSC may cancel the work; a One-Year
       // Extension (Governing Committee, then TSC approval) allows up to 3 years.
       const TWO_YEAR_DEADLINE = "2-Year Deadline";
-      const ONE_YEAR_EXTENSION = "One-Year Extension (Governing Committee + TSC Approval)";
+      const ONE_YEAR_EXTENSION = "One-Year Extension";
 
       document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("plan-start-date").value = todayISO();
@@ -883,13 +900,13 @@
             const warning = row.querySelector(".duration-warning");
             warning.hidden = !split;
             warning.querySelector(".note-text").textContent = split
-              ? `Reaches the 2-year deadline; ${daysBetweenInclusive(addDays(endDate, 1), requestedWorkEnd)} more days requested`
+              ? `Stops at the 2-year deadline; ${daysBetweenInclusive(addDays(endDate, 1), requestedWorkEnd)} days continue in the One-Year Extension`
               : "";
           }
           if (activity === ONE_YEAR_EXTENSION) {
             row.querySelector(".row-note").textContent = informational
-              ? "Not needed: Work Development ends within 2 years."
-              : "Starts the day after the 2-year deadline; at most 1 year (Charter Approval + 3 years).";
+              ? "Not needed: work ends before the deadline."
+              : "Needs Governing Committee approval, then TSC approval. Up to 1 year.";
           }
 
           if (activity === BOD_POW_APPROVAL) bodPowDate = endDate;
