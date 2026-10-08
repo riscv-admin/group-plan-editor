@@ -21,6 +21,9 @@ from tabulate import tabulate
 # Path to the YAML file containing activity definitions
 ACTIVITIES_FILE = "web/activities.yaml"
 
+# Maximum Work Development duration (3 years); TSC approval needed beyond 2 years
+WORK_DEVELOPMENT_MAX_DAYS = 1095
+
 # Ordered list of project phases - defines the sequence of the lifecycle
 PHASE_ORDER = [
     "Proposing",
@@ -255,6 +258,7 @@ def calculate_schedule(
         phase_tasks = activities[phase]
         phase_start = None
         phase_end = None
+        phase_consumed_time = False
 
         # Process each task in the current phase
         for task_name, duration in phase_tasks:
@@ -268,13 +272,15 @@ def calculate_schedule(
             # Set duration to 0 for phases before the start_from phase
             if PHASE_ORDER.index(phase) < start_from_index:
                 base_duration = 0
-            if task_name == "Work Development":
-                base_duration = max(0, min(base_duration, 1095))
-
             # Calculate effective duration based on estimate mode
             effective_duration = effective_duration_for(
                 task_name, base_duration, estimate_mode
             )
+            # Work Development is capped at 3 years after any estimate scaling
+            if task_name == "Work Development":
+                effective_duration = max(
+                    0, min(effective_duration, WORK_DEVELOPMENT_MAX_DAYS)
+                )
 
             is_present_work_progress = (
                 phase == "Active"
@@ -324,6 +330,8 @@ def calculate_schedule(
                 bod_pow_date = end_date
 
             # Track phase boundaries (min/max)
+            if effective_duration > 0 or task_name == "BoD Approval":
+                phase_consumed_time = True
             if phase_start is None or start_date < phase_start:
                 phase_start = start_date
             if phase_end is None or end_date > phase_end:
@@ -345,7 +353,10 @@ def calculate_schedule(
 
         # Add phase summary if it has activities
         if phase_start and phase_end:
-            phase_duration = max(1, (phase_end - phase_start).days + 1)
+            # A skipped phase (every task zeroed by start_from) takes no time
+            phase_duration = (
+                (phase_end - phase_start).days + 1 if phase_consumed_time else 0
+            )
             summary_phases.append(
                 (
                     phase,
