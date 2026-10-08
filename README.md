@@ -10,6 +10,14 @@ Key behaviors
 - "Work Development" is capped at 3 years (1095 days) and shows a warning when
   it exceeds 731 days.
 
+## Live site
+https://riscv-admin.github.io/spec-plan-editor/ has a sibling here:
+https://riscv-admin.github.io/group-plan-editor/
+
+Every push to `main` rebuilds it: `web/build_static.py` renders the Flask page
+once (all date math runs in the browser) and the Pages workflow publishes it.
+The browser calculation mirrors `calculate_schedule()` in `plan.py`.
+
 ## Web app
 Run the Flask app from the `web` directory so it can read `activities.yaml`.
 
