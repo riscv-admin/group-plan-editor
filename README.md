@@ -11,8 +11,9 @@ Key behaviors
   it exceeds 731 days.
 
 ## Live site
-https://riscv-admin.github.io/spec-plan-editor/ has a sibling here:
-https://riscv-admin.github.io/group-plan-editor/
+The planner is published at https://riscv-admin.github.io/group-plan-editor/
+(the specification lifecycle counterpart is at
+https://riscv-admin.github.io/spec-plan-editor/).
 
 Every push to `main` rebuilds it: `web/build_static.py` renders the Flask page
 once (all date math runs in the browser) and the Pages workflow publishes it.
