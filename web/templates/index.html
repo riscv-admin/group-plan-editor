@@ -528,6 +528,16 @@
         font-weight: 500;
       }
 
+      .row-note {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.75rem;
+      }
+
+      .slider.derived {
+        visibility: hidden;
+      }
+
       .duration-warning[hidden] {
         display: none;
       }
@@ -633,9 +643,13 @@
                   <div>
                     <span class="duration-warning" hidden>
                       <i class="fa-solid fa-circle-exclamation"></i>
-                      TSC must approve continuation beyond 2 years
+                      <span class="note-text"></span>
                     </span>
                   </div>
+                  {% elif activity == "2-Year Deadline" %}
+                  <div class="row-note">Charter Approval + 2 years. After this date the TSC may cancel unfinished work.</div>
+                  {% elif activity.startswith("One-Year Extension") %}
+                  <div class="row-note"></div>
                   {% endif %}
                 </td>
                 <td class="start-date">
@@ -653,12 +667,15 @@
                   <div class="slider-container">
                     <input
                       type="range"
-                      class="slider"
+                      class="slider{% if activity == '2-Year Deadline' or activity.startswith('One-Year Extension') %} derived{% endif %}"
                       name="{{ activity.replace(' ', '_') }}_duration"
                       value="{{ duration }}"
                       min="0"
                       max="{% if activity == 'Work Development' %}1095{% else %}500{% endif %}"
                       oninput="updateSlider(this)"
+                      {% if activity == "2-Year Deadline" or activity.startswith("One-Year Extension") %}
+                      disabled title="Calculated from Work Development"
+                      {% endif %}
                     />
                     <span class="slider-value">{{ duration }}</span>
                   </div>
@@ -695,8 +712,11 @@
       const CHARTER_APPROVAL = "Charter Approval by TSC";
       const PRESENT_WORK_PROGRESS = "Present Work Progress to TSC";
       const WORK_DEVELOPMENT = "Work Development";
-      const WORK_DEVELOPMENT_MAX_DAYS = 1095; // 3 years
-      const WORK_DEVELOPMENT_WARN_DAYS = 731; // beyond 2 years needs TSC approval
+      // Work Development runs from Charter Approval by TSC (the group becomes
+      // Active). After 2 years the TSC may cancel the work; a One-Year
+      // Extension (Governing Committee, then TSC approval) allows up to 3 years.
+      const TWO_YEAR_DEADLINE = "2-Year Deadline";
+      const ONE_YEAR_EXTENSION = "One-Year Extension (Governing Committee + TSC Approval)";
 
       document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("plan-start-date").value = todayISO();
@@ -805,21 +825,51 @@
         const gapDays = document.getElementById("handoff-mode").value === "end_to_start" ? 1 : 0;
         let cursor = parseISODate(startInput.value) || parseISODate(todayISO());
         let bodPowDate = null;
+        let charterApprovalDate = null;
+        let requestedWorkEnd = null; // Work Development end before the 2-year split
 
         rows.forEach((row) => {
           const activity = row.dataset.activity;
           const baseDuration = parseInt(row.querySelector(".slider").value, 10) || 0;
           let duration = effectiveDurationFor(activity, baseDuration);
-          if (activity === WORK_DEVELOPMENT) {
-            duration = Math.min(duration, WORK_DEVELOPMENT_MAX_DAYS);
-          }
 
           // Present Work Progress runs 6 months after BoD PoW Approval, in
           // parallel with Work Development; it does not move the cursor.
           const isPresentWorkProgress =
             row.dataset.phase === "Active" && activity === PRESENT_WORK_PROGRESS && bodPowDate;
-          const startDate = isPresentWorkProgress ? addMonths(bodPowDate, 6) : cursor;
-          const endDate = duration > 0 ? addDays(startDate, duration - 1) : startDate;
+          let startDate = isPresentWorkProgress ? addMonths(bodPowDate, 6) : cursor;
+          let endDate = duration > 0 ? addDays(startDate, duration - 1) : startDate;
+
+          // Rows that only mark a date never move the schedule or widen spans
+          let informational = false;
+          if ([WORK_DEVELOPMENT, TWO_YEAR_DEADLINE, ONE_YEAR_EXTENSION].includes(activity)) {
+            const anchor = charterApprovalDate || startDate;
+            const deadline = addMonths(anchor, 24);
+            if (activity === WORK_DEVELOPMENT) {
+              // Work beyond the 2-year deadline moves to the extension row
+              requestedWorkEnd = duration > 0 ? endDate : null;
+              if (requestedWorkEnd && endDate > deadline) {
+                endDate = deadline;
+                duration = daysBetweenInclusive(startDate, endDate);
+              }
+            } else if (activity === TWO_YEAR_DEADLINE) {
+              startDate = endDate = deadline;
+              duration = 0;
+              informational = true;
+            } else {
+              startDate = addDays(deadline, 1);
+              if (requestedWorkEnd && requestedWorkEnd > deadline) {
+                const maxEnd = addMonths(anchor, 36);
+                endDate = requestedWorkEnd < maxEnd ? requestedWorkEnd : maxEnd;
+                duration = daysBetweenInclusive(startDate, endDate);
+              } else {
+                endDate = startDate;
+                duration = 0;
+                informational = true;
+              }
+            }
+          }
+          row.dataset.informational = String(informational);
 
           const startCell = row.querySelector(".start-date");
           const rowStartInput = startCell.querySelector("input");
@@ -828,10 +878,23 @@
           row.querySelector(".end-date").textContent = toISODate(endDate);
           row.querySelector(".slider-value").textContent = String(duration);
 
-          const warning = row.querySelector(".duration-warning");
-          if (warning) warning.hidden = duration <= WORK_DEVELOPMENT_WARN_DAYS;
+          if (activity === WORK_DEVELOPMENT) {
+            const split = requestedWorkEnd && requestedWorkEnd > endDate;
+            const warning = row.querySelector(".duration-warning");
+            warning.hidden = !split;
+            warning.querySelector(".note-text").textContent = split
+              ? `Reaches the 2-year deadline; ${daysBetweenInclusive(addDays(endDate, 1), requestedWorkEnd)} more days requested`
+              : "";
+          }
+          if (activity === ONE_YEAR_EXTENSION) {
+            row.querySelector(".row-note").textContent = informational
+              ? "Not needed: Work Development ends within 2 years."
+              : "Starts the day after the 2-year deadline; at most 1 year (Charter Approval + 3 years).";
+          }
 
           if (activity === BOD_POW_APPROVAL) bodPowDate = endDate;
+          if (activity === CHARTER_APPROVAL) charterApprovalDate = endDate;
+          if (informational) return;
           if (!isPresentWorkProgress && duration > 0) cursor = addDays(endDate, gapDays);
         });
 
@@ -848,7 +911,9 @@
       function collectPhaseSummaries() {
         const rows = timelineRows();
         return PHASE_ORDER.filter((phase) => rows.some((row) => row.dataset.phase === phase)).map((phase) => {
-          const phaseRows = rows.filter((row) => row.dataset.phase === phase);
+          const phaseRows = rows.filter(
+            (row) => row.dataset.phase === phase && row.dataset.informational !== "true"
+          );
           let start = null;
           let end = null;
           let consumedTime = false;
@@ -873,8 +938,15 @@
         return row ? row.querySelector(".end-date").textContent.trim() : "N/A";
       }
 
+      function extensionText() {
+        const row = timelineRows().find((r) => r.dataset.activity === ONE_YEAR_EXTENSION);
+        if (!row || row.dataset.informational === "true") return "No extension needed";
+        const days = row.querySelector(".slider-value").textContent.trim();
+        return `Extension: ${days} days, to ${row.querySelector(".end-date").textContent.trim()}`;
+      }
+
       function updateInfoBar() {
-        const rows = timelineRows();
+        const rows = timelineRows().filter((r) => r.dataset.informational !== "true");
         const starts = rows.map((r) => parseISODate(readDateFromCell(r.querySelector(".start-date")))).filter(Boolean);
         const ends = rows.map((r) => parseISODate(r.querySelector(".end-date").textContent)).filter(Boolean);
         const start = new Date(Math.min(...starts));
@@ -891,6 +963,11 @@
             <div>
               <div class="info-label">Charter Approval (TSC)</div>
               <div class="info-value">${endDateOf(CHARTER_APPROVAL)}</div>
+            </div>
+            <div>
+              <div class="info-label">2-Year Deadline</div>
+              <div class="info-value">${endDateOf(TWO_YEAR_DEADLINE)}</div>
+              <div class="info-detail">${extensionText()}</div>
             </div>
             <div>
               <div class="info-label">Total Lifecycle</div>

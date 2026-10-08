@@ -21,8 +21,13 @@ from tabulate import tabulate
 # Path to the YAML file containing activity definitions
 ACTIVITIES_FILE = "web/activities.yaml"
 
-# Maximum Work Development duration (3 years); TSC approval needed beyond 2 years
-WORK_DEVELOPMENT_MAX_DAYS = 1095
+# Work Development runs from Charter Approval by TSC (the group becomes Active).
+# After 2 years the TSC may cancel the work; a One-Year Extension (Governing
+# Committee, then TSC approval) can take it to at most 3 years.
+CHARTER_APPROVAL = "Charter Approval by TSC"
+WORK_DEVELOPMENT = "Work Development"
+TWO_YEAR_DEADLINE = "2-Year Deadline"
+ONE_YEAR_EXTENSION = "One-Year Extension (Governing Committee + TSC Approval)"
 
 # Ordered list of project phases - defines the sequence of the lifecycle
 PHASE_ORDER = [
@@ -249,6 +254,8 @@ def calculate_schedule(
     overall_end = None
     last_end_date = None
     bod_pow_date = None
+    charter_approval_date = None
+    requested_work_end = None  # Work Development end before the 2-year split
 
     # Iterate through all phases in order
     for phase in PHASE_ORDER:
@@ -276,11 +283,6 @@ def calculate_schedule(
             effective_duration = effective_duration_for(
                 task_name, base_duration, estimate_mode
             )
-            # Work Development is capped at 3 years after any estimate scaling
-            if task_name == "Work Development":
-                effective_duration = max(
-                    0, min(effective_duration, WORK_DEVELOPMENT_MAX_DAYS)
-                )
 
             is_present_work_progress = (
                 phase == "Active"
@@ -296,6 +298,32 @@ def calculate_schedule(
             if effective_duration != 0:
                 # End date is start + duration - 1 (inclusive)
                 end_date = start_date + timedelta(days=effective_duration - 1)
+
+            # Rows that only mark a date; they never move the schedule or
+            # widen phase spans
+            informational = False
+            if task_name in (WORK_DEVELOPMENT, TWO_YEAR_DEADLINE, ONE_YEAR_EXTENSION):
+                anchor = charter_approval_date or start_date
+                deadline = add_months(anchor, 24)
+                if task_name == WORK_DEVELOPMENT:
+                    # Work beyond the 2-year deadline moves to the extension row
+                    requested_work_end = end_date if effective_duration > 0 else None
+                    if requested_work_end and end_date > deadline:
+                        end_date = deadline
+                        effective_duration = (end_date - start_date).days + 1
+                elif task_name == TWO_YEAR_DEADLINE:
+                    start_date = end_date = deadline
+                    effective_duration = 0
+                    informational = True
+                else:
+                    start_date = deadline + timedelta(days=1)
+                    if requested_work_end and requested_work_end > deadline:
+                        end_date = min(requested_work_end, add_months(anchor, 36))
+                        effective_duration = (end_date - start_date).days + 1
+                    else:
+                        end_date = start_date
+                        effective_duration = 0
+                        informational = True
 
             # Special handling for BoD Approval: must be on last Thursday of month
             if task_name == "BoD Approval":
@@ -328,6 +356,10 @@ def calculate_schedule(
 
             if task_name == "BoD PoW Approval":
                 bod_pow_date = end_date
+            if task_name == CHARTER_APPROVAL:
+                charter_approval_date = end_date
+            if informational:
+                continue
 
             # Track phase boundaries (min/max)
             if effective_duration > 0 or task_name == "BoD Approval":
@@ -450,18 +482,23 @@ def build_plan_summary(calculated_dates):
             "activity": activity,
             "start": start_date,
             "end": end_date,
+            "duration": duration,
         }
-        for phase, activity, start_date, end_date, _ in calculated_dates
+        for phase, activity, start_date, end_date, duration in calculated_dates
     ]
     # Group rows by phase for easier lookup
     rows_by_phase = {}
     for row in rows:
         rows_by_phase.setdefault(row["phase"], []).append(row)
 
-    def find_by_activity(activity_substr, phase_filter=None):
-        """Find a row by activity name substring and optional phase filter."""
+    def find_by_activity(activity_name, phase_filter=None):
+        """Find a row by exact activity name and optional phase filter.
+
+        Exact match: a substring match on "Work Development" would hit
+        "Proposal of Work Development" first.
+        """
         for row in rows:
-            if activity_substr in row["activity"]:
+            if row["activity"] == activity_name:
                 if phase_filter is None or row["phase"] == phase_filter:
                     return row
         return None
@@ -486,7 +523,18 @@ def build_plan_summary(calculated_dates):
         {
             "label": "Work Development Complete by",
             "dateType": "end",
-            "activity": "Work Development",
+            "activity": WORK_DEVELOPMENT,
+        },
+        {
+            "label": "2-Year Deadline",
+            "dateType": "end",
+            "activity": TWO_YEAR_DEADLINE,
+        },
+        {
+            "label": "One-Year Extension Complete by",
+            "dateType": "end",
+            "activity": ONE_YEAR_EXTENSION,
+            "skipIfZero": True,
         },
         {
             "label": "Group Disbanded by",
@@ -516,7 +564,9 @@ def build_plan_summary(calculated_dates):
                 )
 
         # Extract the appropriate date (start or end) from the relevant row
-        if relevant_row:
+        if relevant_row and milestone.get("skipIfZero") and not relevant_row["duration"]:
+            date_value = "N/A"  # e.g. no extension needed
+        elif relevant_row:
             date_value = (
                 relevant_row["start"]
                 if milestone["dateType"] == "start"

@@ -17,5 +17,7 @@ activities:
   Active:
     - ["Present Work Progress to TSC", 14]
     - ["Work Development", 365]
+    - ["2-Year Deadline", 0]
+    - ["One-Year Extension (Governing Committee + TSC Approval)", 0]
   Disbanded:
     - ["Group Disbanded", 14]

@@ -7,8 +7,12 @@ exports the detailed plan or phase summary as CSV.
 Key behaviors
 - Tasks are sequential by default.
 - "Present Work Progress to TSC" starts exactly 6 months after "BoD PoW Approval".
-- "Work Development" is capped at 3 years (1095 days) and shows a warning when
-  it exceeds 731 days.
+- "Work Development" starts after "Charter Approval by TSC" (the group becomes
+  Active). The "2-Year Deadline" row marks Charter Approval + 2 years, after
+  which the TSC may cancel unfinished work. Work requested beyond that date
+  moves to the "One-Year Extension (Governing Committee + TSC Approval)" row,
+  which starts the day after the deadline and ends no later than Charter
+  Approval + 3 years.
 
 ## Live site
 The planner is published at https://riscv-admin.github.io/group-plan-editor/
